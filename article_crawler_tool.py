@@ -38,6 +38,7 @@ metaItemDiv = "div.meta-item"
 contentP = "div.entry-content p,div.entry-content h2"
 updateSpan = "span.updated"
 titleH1 = "h1.entry-title"
+categorySpan = "header.entry-header span.meta-category a"
 
 # instance driver
 driver = webdriver.Chrome(executable_path="./chrome_driver/chromedriver_chromium", options=options)
@@ -66,6 +67,9 @@ def process_each():
                 els = driver.find_elements(By.CSS_SELECTOR, contentP)
                 contents = [el.text for el in els]
                 article.set_content(os.sep.join(contents))
+                c_els = driver.find_elements(By.CSS_SELECTOR, categorySpan)
+                categories = [el.text for el in c_els]
+                article.set_categories(categories)
         except NoSuchElementException:
             print('no such element')
 
@@ -76,7 +80,7 @@ def close_driver():
 
 
 def search_from_header(header):
-    article = Article(None, None, None, None)
+    article = Article(None, None, None, None, None)
     article.set_update_time(search_day)
     title_els = header.find_elements(By.CSS_SELECTOR, titleAHref)
     if len(title_els) > 0:

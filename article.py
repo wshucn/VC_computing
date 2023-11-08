@@ -1,9 +1,10 @@
 class Article:
-    def __init__(self, url, title, update_time, content):
+    def __init__(self, categories, url, title, update_time, content):
         self._title = title
         self._url = url
         self._update_time = update_time
         self._content = content
+        self._categories = categories
 
     @property
     def title(self):
@@ -11,6 +12,13 @@ class Article:
 
     def set_title(self, title):
         self._title = title
+
+    @property
+    def categories(self):
+        return self._categories
+
+    def set_categories(self, categories):
+        self._categories = categories
 
     @property
     def url(self):
