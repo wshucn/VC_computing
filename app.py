@@ -1,6 +1,6 @@
 from flask import Flask, request
-from article_compare_tool import compare_two, compare_relative, compare_with_target
-from article_crawler_tool import article_crawler
+from article_compare_tool import compare_two, compare_with_target
+from article_crawler_crunchbase import ArticleCrawlerCrunchbase
 import json
 
 app = Flask(__name__)
@@ -41,15 +41,19 @@ def handle_articles_compare():
         return 'exception occurred'
 
 
-@app.route("/articles/crawler", methods=['POST'])
+@app.route("/articles/crawler/crunchbase", methods=['POST'])
 def handle_articles_crawler():
+    """
+    crawler to crunchbase, date format is like 'November 9, 2023'
+    the return articles need transfer with json
+    """
     try:
         content_type = request.headers.get('Content-Type')
         if content_type == 'application/json':
             input_content = request.json
-            site = input_content['site']
             date = input_content['date']
-            return article_crawler(site, date)
+            articles = ArticleCrawlerCrunchbase(date).process()
+            return json.dumps(articles, default=lambda o: o.__dict__)
         else:
             return 'Content-Type not supported!'
     except Exception as e:
@@ -58,4 +62,4 @@ def handle_articles_crawler():
 
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=8888)
+    app.run(host='0.0.0.0', port=5000)
