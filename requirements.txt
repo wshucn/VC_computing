@@ -1,0 +1,5 @@
+sentence_transformers==2.2.2
+flask==2.2.2
+selenium==3.141.0
+urllib3==1.26.2
+Werkzeug==2.2.2

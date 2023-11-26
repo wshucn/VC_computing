@@ -1,6 +1,7 @@
 from flask import Flask, request
 from article_compare_tool import compare_two, compare_with_target
 from article_crawler_crunchbase import ArticleCrawlerCrunchbase
+from page_crawler import PageCrawler
 import json
 
 app = Flask(__name__)
@@ -40,6 +41,21 @@ def handle_articles_compare():
         print(f'exception occurred {e}')
         return 'exception occurred'
 
+
+@app.route("/page/crawler", methods=['POST'])
+def handle_page_crawler():
+    try:
+        content_type = request.headers.get('Content-Type')
+        if content_type == 'application/json':
+            input_content = request.json
+            url = input_content['url']
+            commands = input_content['commands']
+            return PageCrawler(url, commands).process()
+        else:
+            return 'Content-Type not supported!'
+    except Exception as e:
+        print(f'exception occurred {e}')
+        return 'exception occurred'
 
 @app.route("/articles/crawler/crunchbase", methods=['POST'])
 def handle_articles_crawler():
