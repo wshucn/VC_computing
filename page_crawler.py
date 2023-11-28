@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from abc import ABC, abstractmethod
 import configparser
 
@@ -75,8 +76,12 @@ class PageCrawler(ABC):
                     loop =  command['loop'] if 'loop' in command else 1
                     print(f'click {command["selector"]} {loop} times')
                     for i in range(loop):
-                        wait = WebDriverWait(self._driver, 10)
-                        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, command['selector']))).click()
+                        try: 
+                            wait = WebDriverWait(self._driver, 10)
+                            wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, command['selector']))).click()
+                        except TimeoutException as ex:
+                            print(f'click {command["selector"]} timeout')
+                            
     @property
     def driver(self):
         return self._driver
