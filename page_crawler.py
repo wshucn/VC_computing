@@ -62,6 +62,7 @@ class PageCrawler(ABC):
         wait = WebDriverWait(self._driver, 10)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         self.__process_commands()  
+        print(f'after process commands, get page source')
         self._htmlContent = self._driver.page_source
 
         # elem = self._driver.find_element("xpath", "//*")
@@ -76,9 +77,6 @@ class PageCrawler(ABC):
                     for i in range(loop):
                         wait = WebDriverWait(self._driver, 10)
                         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, command['selector']))).click()
-            else:
-                raise CrawlerProcessException('command not supported')
-
     @property
     def driver(self):
         return self._driver
