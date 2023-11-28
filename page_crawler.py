@@ -68,7 +68,7 @@ class PageCrawler(ABC):
         # self._htmlContent = elem.get_attribute("outerHTML")
 
     def __process_commands(self):
-        for command in self.commands:
+        for command in self._commands:
             if command['action'] == 'click':
                 if 'selector' in command:
                     loop =  command['loop'] if 'loop' in command else 1
