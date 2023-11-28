@@ -72,6 +72,7 @@ class PageCrawler(ABC):
             if command['action'] == 'click':
                 if 'selector' in command:
                     loop =  command['loop'] if 'loop' in command else 1
+                    print(f'click {command["selector"]} {loop} times')
                     for i in range(loop):
                         wait = WebDriverWait(self._driver, 10)
                         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, command['selector']))).click()
