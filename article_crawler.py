@@ -7,7 +7,7 @@ import configparser
 
 
 class ArticleCrawler(ABC):
-
+    
     def __init__(self, query_date):
         self._site = self._get_site()
         self._query_date = query_date

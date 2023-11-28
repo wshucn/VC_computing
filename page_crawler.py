@@ -1,12 +1,18 @@
 from selenium.common.exceptions import NoSuchElementException
-
+import threading
 from article import Article
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from abc import ABC, abstractmethod
 import configparser
 
+lock = threading.Lock()
 
 class PageCrawler(ABC):
+    _htmlContent = ''
 
     def __init__(self, page_url, query_date):
         self._page_url = page_url
@@ -51,7 +57,12 @@ class PageCrawler(ABC):
             self._driver.quit()
 
     def __get_page_source(self):
-        return self._driver.page_source
+        wait = WebDriverWait(self._driver, 10)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        self._htmlContent = self._driver.page_source
+
+        # elem = self._driver.find_element("xpath", "//*")
+        # self._htmlContent = elem.get_attribute("outerHTML")
     
     @property
     def driver(self):
@@ -60,13 +71,16 @@ class PageCrawler(ABC):
 
     def process(self):
         try:
+            lock.acquire()
             self.__init_driver()
             self.__open_page()
+            self.__get_page_source()
         except CrawlerProcessException:
             print(f'Exception occurred {Exception}')
         finally:
             self.__close_driver()
-        return self.__get_page_source()
+            lock.release()
+        return self._htmlContent
 
 class CrawlerProcessException(Exception):
     """Raised when the process error occurred"""
