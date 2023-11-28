@@ -79,7 +79,9 @@ class PageCrawler(ABC):
                         try: 
                             wait = WebDriverWait(self._driver, 10)
                             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, command['selector'])))
+                            print(f'element found {command["selector"]}')
                             self.driver.find_element(By.CSS_SELECTOR, command['selector']).click()
+                            print(f'element click {command["selector"]}')
                         except TimeoutException as ex:
                             print(f'click {command["selector"]} timeout')
 
