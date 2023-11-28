@@ -14,10 +14,11 @@ lock = threading.Lock()
 class PageCrawler(ABC):
     _htmlContent = ''
 
-    def __init__(self, page_url, query_date):
+    def __init__(self, page_url, commands):
         self._page_url = page_url
-        self._query_date = query_date
+        self._commands = commands
         self._driver = None
+        
 
     def __init_driver(self):
         cfp = configparser.RawConfigParser()
@@ -57,13 +58,26 @@ class PageCrawler(ABC):
             self._driver.quit()
 
     def __get_page_source(self):
+        # find body
         wait = WebDriverWait(self._driver, 10)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        self.__process_commands()  
         self._htmlContent = self._driver.page_source
 
         # elem = self._driver.find_element("xpath", "//*")
         # self._htmlContent = elem.get_attribute("outerHTML")
-    
+
+    def __process_commands(self):
+        for command in self.commands:
+            if command['action'] == 'click':
+                if 'selector' in command:
+                    loop =  command['loop'] if 'loop' in command else 1
+                    for i in range(loop):
+                        wait = WebDriverWait(self._driver, 10)
+                        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, command['selector']))).click()
+            else:
+                raise CrawlerProcessException('command not supported')
+
     @property
     def driver(self):
         return self._driver
