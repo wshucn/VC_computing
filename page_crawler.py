@@ -31,7 +31,7 @@ class PageCrawler(ABC):
             try:
                 host_name = urlparse(self._page_url).hostname
                 home_url = "https://" + host_name
-                self.__driver.get(home_url)
+                self._driver.get(home_url)
                 cookies = pickle.load(open(self._cookies_path, "rb"))
                 for cookie in cookies:
                     if "expiry" in cookie:
