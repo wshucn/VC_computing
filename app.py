@@ -3,6 +3,7 @@ from article_compare_tool import compare_two, compare_with_target
 from article_crawler_crunchbase import ArticleCrawlerCrunchbase
 from page_crawler import PageCrawler
 import json
+import traceback
 
 app = Flask(__name__)
 
@@ -49,12 +50,16 @@ def handle_page_crawler():
         if content_type == "application/json":
             input_content = request.json
             url = input_content["url"]
-            headless = input_content["headless"]
+            if "headless" in input_content:
+                headless = input_content["headless"]
+            else:
+                headless = True
             commands = input_content["commands"]
             return PageCrawler(headless, url, commands).process()
         else:
             return "Content-Type not supported!"
     except Exception as e:
+        print(traceback.format_exc())
         print(f"exception occurred {e}")
         return "exception occurred"
 

@@ -1,4 +1,7 @@
 from datetime import time
+import os
+from time import sleep
+import traceback
 import pickle
 from urllib.parse import urlparse
 from selenium.common.exceptions import NoSuchElementException
@@ -10,6 +13,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.action_chains import ActionChains
+
+
 from abc import ABC, abstractmethod
 import configparser
 
@@ -27,12 +33,12 @@ class PageCrawler(ABC):
         self._cookies_path = ""
 
     def __load_cookies(self):
-        if self._cookies_path:
+        if self._cookie_file_path:
             try:
                 host_name = urlparse(self._page_url).hostname
                 home_url = "https://" + host_name
                 self._driver.get(home_url)
-                cookies = pickle.load(open(self._cookies_path, "rb"))
+                cookies = pickle.load(open(self._cookie_file_path, "rb"))
                 for cookie in cookies:
                     if "expiry" in cookie:
                         del cookie["expiry"]
@@ -40,20 +46,27 @@ class PageCrawler(ABC):
                         self._driver.add_cookie(cookie)
                 self._driver.refresh()
             except Exception as e:
+                print(traceback.format_exc())
                 # it'll fail for the first time, when cookie file is not present
                 print(str(e))
                 print("Error loading cookies")
 
     def __save_cookies(self):
         # save cookies
-        cookies = self._driver.get_cookies()
-        pickle.dump(cookies, open(self._cookies_path, "wb"))
+        if self._cookie_file_path:
+            cookies = self._driver.get_cookies()
+            pickle.dump(cookies, open(self._cookie_file_path, "wb"))
 
     def __init_driver(self):
         cfp = configparser.RawConfigParser()
         cfp.read("config.ini", encoding="utf-8")
         driver_path = cfp["driver"]["driverPath"]
         self._cookies_path = cfp["driver"]["cookiesPath"]
+
+        host_name = urlparse(self._page_url).hostname
+        self._cookie_file_path = (
+            self._cookies_path + host_name.replace(".", "_").replace(":", "_") + ".pkl"
+        )
 
         arg_enable_local_store = "user-data-dir=selenium"
         arg_disable_infobar = "disable-infobars"
@@ -76,6 +89,7 @@ class PageCrawler(ABC):
         options.add_argument(arg_user_agent)
         options.add_argument(arg_enable_local_store)
         options.add_argument(arg_disable_image)
+        options.add_argument("--window-size=1920,1080")
         if self._headless:
             options.add_argument(arg_headless)
 
@@ -151,6 +165,8 @@ class PageCrawler(ABC):
                 self.__process_wait_element(command)
             if command["action"] == "scrolldown":
                 self.__process_scrolldown(command)
+            if command["action"] == "mouse_over_click":
+                self.__process_mouse_over_click(command)
             if command["action"] == "login":
                 result = self.__process_login(command)
                 if result == False:
@@ -160,20 +176,22 @@ class PageCrawler(ABC):
         # Get scroll height.
         last_height = self._driver.execute_script("return document.body.scrollHeight")
         loop = command["loop"] if "loop" in command else 1
-        print(f'scroll {command["selector"]} {loop} times')
         for i in range(loop):
             # Scroll down to the bottom.
-            self.driver.execute_script(
+            self._driver.execute_script(
                 "window.scrollTo(0, document.body.scrollHeight);"
             )
 
             # Wait to load the page.
-            time.sleep(2)
+            sleep(2)
 
             # Calculate new scroll height and compare with last scroll height.
-            new_height = self.driver.execute_script("return document.body.scrollHeight")
+            new_height = self._driver.execute_script(
+                "return document.body.scrollHeight"
+            )
 
             if new_height == last_height:
+                print("height not changed, so retry to scroll down")
                 continue
 
             last_height = new_height
@@ -239,6 +257,29 @@ class PageCrawler(ABC):
 
         return False
 
+    def __process_mouse_over_click(self, command):
+        if "selector" in command:
+            try:
+                element_to_hover_over = WebDriverWait(self._driver, 10).until(
+                    EC.presence_of_element_located(
+                        (By.CSS_SELECTOR, command["selector"])
+                    )
+                )
+
+                hover = ActionChains(self._driver).move_to_element(
+                    element_to_hover_over
+                )
+                hover.perform()
+
+                element_to_click = self._driver.find_element_by_css_selector(
+                    command["selector"]
+                )
+                element_to_click.click()
+                sleep(2)
+            except TimeoutException as e:
+                print(f"__process_mouse_over_click timeout {e}")
+                return ""
+
     @property
     def driver(self):
         return self._driver
@@ -250,6 +291,7 @@ class PageCrawler(ABC):
             self.__open_page()
             self.__get_page_source()
         except CrawlerProcessException:
+            print(traceback.format_exc())
             print(f"Exception occurred {Exception}")
         finally:
             self.__close_driver()
